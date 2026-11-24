@@ -5,7 +5,7 @@ revision recorded by the W1WEOS36.48-22-3-3-4-3 kernel. This is **not a complete
 Debian port, a flashable image, or a claim of compatibility**.
 
 The stock target uses the extracted stock configuration. The Linux target adds
-devtmpfs, file handles, autofs, tmpfs ACLs, and disables export trimming and GKI
+devtmpfs, file handles, autofs, tmpfs ACLs (including their xattr dependency), and disables export trimming and GKI
 module signature protection, following the referenced port. Android's normal
 hardware/driver behavior still needs verification with our firmware.
 

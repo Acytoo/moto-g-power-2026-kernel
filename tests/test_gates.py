@@ -16,6 +16,31 @@ def module(name):
 
 
 class Gates(unittest.TestCase):
+    def test_missing_link_capabilities_remain_fatal(self):
+        prepare = module('prepare')
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            p = Path(tmp)
+            text = (ROOT / 'config/stock.config').read_text().replace(
+                'CONFIG_CC_CAN_LINK=y', '# CONFIG_CC_CAN_LINK is not set')
+            (p / 'config').write_text(text)
+            with self.assertRaises(SystemExit):
+                prepare.check('stock', p / 'config', p / 'report')
+
+    def test_linux_acl_dependency_is_explicit_and_required(self):
+        prepare = module('prepare')
+        expected = prepare.config(ROOT / 'config/stock.config')
+        expected.update(prepare.config(ROOT / 'config/linux.fragment'))
+        self.assertEqual(expected['CONFIG_TMPFS_XATTR'], 'y')
+        expected.pop('CONFIG_UNUSED_KSYMS_WHITELIST', None)
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            p = Path(tmp)
+            (p / 'config').write_text('\n'.join(f'{k}={v}' for k, v in expected.items()))
+            prepare.check('linux', p / 'config', p / 'report')
+            expected['CONFIG_TMPFS_XATTR'] = 'n'
+            (p / 'config').write_text('\n'.join(f'{k}={v}' for k, v in expected.items()))
+            with self.assertRaises(SystemExit):
+                prepare.check('linux', p / 'config', p / 'report')
+
     def test_stock_config_accepts_only_intended_features(self):
         prepare = module('prepare')
         with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):

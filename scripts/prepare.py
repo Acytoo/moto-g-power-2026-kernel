@@ -64,6 +64,10 @@ def check(variant, actual, report):
         print(line)
     unexpected = set(differences) - metadata
     if unexpected:
+        for key in sorted(unexpected):
+            a, b = differences[key]
+            message = f'{key}: expected={a}, actual={b}'.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+            print(f'::error title=Unexpected configuration drift::{message}')
         raise SystemExit('Unexplained configuration drift: ' + ', '.join(sorted(unexpected)))
     print('Configuration matches expected features (tool version differences reported separately)')
 

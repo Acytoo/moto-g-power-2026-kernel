@@ -16,7 +16,16 @@ export SOURCE_DATE_EPOCH=1770997568
 export LOCALVERSION="$KERNEL_LOCALVERSION"
 MK=(make -C "$SRC" O="$OUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang
     HOSTCC=clang HOSTCXX=clang++ KCFLAGS=-D__ANDROID_COMMON_KERNEL__
+    USERCFLAGS=--gcc-toolchain=/usr USERLDFLAGS=-fuse-ld=lld
     -j"${BUILD_JOBS:-$(nproc)}")
+# Kconfig tests dynamic and static ARM64 userspace linking before enabling the
+# UAPI header tests. These probes need the cross libc/GCC runtime, not just LLVM.
+"$SRC/scripts/cc-can-link.sh" clang --target=aarch64-linux-gnu --gcc-toolchain=/usr -fuse-ld=lld || {
+  echo 'ARM64 userspace linking failed: check the cross GCC/libc packages'; exit 1;
+}
+"$SRC/scripts/cc-can-link.sh" clang --target=aarch64-linux-gnu --gcc-toolchain=/usr -fuse-ld=lld -static || {
+  echo 'Static ARM64 userspace linking failed: check libc6-dev-arm64-cross'; exit 1;
+}
 cp "$ROOT/work/abi_symbollist.raw" "$OUT/abi_symbollist.raw"
 # gen_autoksyms.sh resolves relative whitelist paths against the source tree.
 cp "$ROOT/work/abi_symbollist.raw" "$SRC/abi_symbollist.raw"

@@ -34,7 +34,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev dwarves zstd lz4 curl python3 cpio rsync kmod
+          sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev dwarves zstd lz4 curl python3 cpio rsync kmod gcc-aarch64-linux-gnu libc6-dev-arm64-cross
           df -h .
       - name: Fetch pinned public kernel and compiler
         run: bash scripts/fetch.sh
