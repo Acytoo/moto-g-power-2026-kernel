@@ -13,13 +13,15 @@ permissions:
 
 concurrency:
   group: kernel-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
     name: ${{ matrix.variant }} kernel
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    env:
+      BUILD_JOBS: '2'
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +38,24 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev dwarves zstd lz4 curl python3 cpio rsync kmod gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+          sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev dwarves zstd lz4 curl python3 cpio rsync kmod gcc-aarch64-linux-gnu libc6-dev-arm64-cross time
+          df -h .
+      - name: Reserve memory for full LTO on the disposable runner
+        run: |
+          # These are preinstalled SDKs on this fresh GitHub VM, never user files.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+          available=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
+          if (( available < 28 * 1024 * 1024 * 1024 )); then
+            echo '::error::Need room for 16 GiB swap and at least 12 GiB build space'
+            df -h .
+            exit 1
+          fi
+          swap_file="$RUNNER_TEMP/kernel-build.swap"
+          sudo fallocate -l 16G "$swap_file"
+          sudo chmod 600 "$swap_file"
+          sudo mkswap "$swap_file"
+          sudo swapon "$swap_file"
+          free -h
           df -h .
       - name: Restore public source and compiler cache
         id: public-cache
@@ -80,6 +99,8 @@ jobs:
             dist/${{ matrix.variant }}/abi_symbollist.raw
             dist/${{ matrix.variant }}/SHA256SUMS
             dist/${{ matrix.variant }}/build.log
+            dist/${{ matrix.variant }}/resource-usage.txt
+            dist/${{ matrix.variant }}/vmstat.log
       - name: Upload diagnostic logs on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -90,6 +111,8 @@ jobs:
           path: |
             dist/${{ matrix.variant }}/config-drift.txt
             dist/${{ matrix.variant }}/build.log
+            dist/${{ matrix.variant }}/resource-usage.txt
+            dist/${{ matrix.variant }}/vmstat.log
 
   compare:
     name: Compare kernel exports and BTF layouts

@@ -17,6 +17,7 @@ select **Build 5.15.189 control and Linux kernels**, then **Run workflow**.
 Alternatively, deliberately push to the `ci-build` branch (the retry lane, allowing
 public input caches to be reused), or push a `kernel-build-<name>` tag to start one
 build. Main/ordinary branch pushes do not start builds; nothing publishes to Releases.
+A new deliberate build on the same branch supersedes its older unfinished run.
 
 Two Ubuntu 24.04 x86-64 jobs cross-compile ARM64 kernels in parallel. They fetch
 immutable public source/compiler revisions, install build dependencies, reject
@@ -27,6 +28,10 @@ after seven days. Private repositories consume Actions allowance/billable time.
 Standard runners have limited disk space. A source archive avoids a full repo
 checkout, and variants build in separate jobs. If disk space or RAM runs out,
 inspect the failed job before selecting a larger runner or tuning concurrency.
+The runner removes its preinstalled Android/.NET SDKs, reserves 16 GiB of swap,
+and uses two compiler jobs to leave memory headroom for stock full LTO. The stock
+optimization/debug settings remain intact. vmstat and peak resource usage are
+included with success/failure diagnostics; this changes only the disposable CI VM.
 Initial planning estimate: 30–90 minutes per kernel; this has not been measured.
 
 ## Confidentiality boundary

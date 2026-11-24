@@ -43,7 +43,18 @@ release=$("${MK[@]}" -s --no-print-directory kernelrelease)
   printf 'Unexpected kernel release: %s\n' "$release"; exit 1;
 }
 printf 'Verified kernel release: %s\n' "$release"
-"${MK[@]}" Image.gz modules 2>&1 | tee "$DEST/build.log"
+vmstat -t 30 > "$DEST/vmstat.log" &
+resource_pid=$!
+stop_monitor() {
+  if [[ -n ${resource_pid:-} ]]; then
+    kill "$resource_pid" 2>/dev/null || true
+    wait "$resource_pid" 2>/dev/null || true
+    resource_pid=''
+  fi
+}
+trap stop_monitor EXIT
+/usr/bin/time -v -o "$DEST/resource-usage.txt" "${MK[@]}" Image.gz modules 2>&1 | tee "$DEST/build.log"
+stop_monitor
 cp "$OUT/arch/arm64/boot/Image" "$OUT/arch/arm64/boot/Image.gz" "$OUT/vmlinux" "$OUT/Module.symvers" "$DEST/"
 cp "$OUT/.config" "$DEST/kernel.config"
 cp "$ROOT/config/sources.env" "$DEST/sources.env"
