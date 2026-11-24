@@ -1,0 +1,9 @@
+# Minimal Linux userspace support, following dingyifei/gpower26-cluster-pub.
+# Validate this against our 5.15.189 vendor modules before any hardware test.
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_FHANDLE=y
+CONFIG_AUTOFS_FS=y
+CONFIG_TMPFS_POSIX_ACL=y
+# CONFIG_TRIM_UNUSED_KSYMS is not set
+# CONFIG_MODULE_SIG_PROTECT is not set

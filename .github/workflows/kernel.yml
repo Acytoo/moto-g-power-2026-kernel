@@ -1,0 +1,104 @@
+name: Build 5.15.189 control and Linux kernels
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kernel-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: ${{ matrix.variant }} kernel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [stock, linux]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check publication boundary and helper tests
+        run: |
+          python3 scripts/audit.py
+          python3 -m unittest discover -s tests -v
+          for script in scripts/fetch.sh scripts/build.sh; do bash -n "$script"; done
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev dwarves zstd lz4 curl python3 cpio rsync kmod
+          df -h .
+      - name: Fetch pinned public kernel and compiler
+        run: bash scripts/fetch.sh
+      - name: Build and reject unexplained configuration drift
+        run: bash scripts/build.sh '${{ matrix.variant }}'
+      - name: Upload selected kernel outputs
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: kernel-${{ matrix.variant }}-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 1
+          path: |
+            dist/${{ matrix.variant }}/Image
+            dist/${{ matrix.variant }}/Image.gz
+            dist/${{ matrix.variant }}/vmlinux
+            dist/${{ matrix.variant }}/Module.symvers
+            dist/${{ matrix.variant }}/kernel.config
+            dist/${{ matrix.variant }}/kernel.release
+            dist/${{ matrix.variant }}/config-drift.txt
+            dist/${{ matrix.variant }}/compiler.txt
+            dist/${{ matrix.variant }}/pahole.txt
+            dist/${{ matrix.variant }}/sources.env
+            dist/${{ matrix.variant }}/abi_symbollist.raw
+            dist/${{ matrix.variant }}/SHA256SUMS
+            dist/${{ matrix.variant }}/build.log
+      - name: Upload diagnostic logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: failure-${{ matrix.variant }}-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            dist/${{ matrix.variant }}/config-drift.txt
+            dist/${{ matrix.variant }}/build.log
+
+  compare:
+    name: Compare kernel exports and BTF layouts
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dwarves
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: kernel-stock-${{ github.run_id }}
+          path: artifacts/stock
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: kernel-linux-${{ github.run_id }}
+          path: artifacts/linux
+      - name: Verify artifact checksums
+        run: |
+          (cd artifacts/stock && sha256sum -c SHA256SUMS)
+          (cd artifacts/linux && sha256sum -c SHA256SUMS)
+      - name: Compare
+        run: python3 scripts/compare.py artifacts/stock artifacts/linux dist/comparison
+      - name: Upload comparison
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: comparison-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: dist/comparison/comparison.json
