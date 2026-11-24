@@ -2,6 +2,9 @@ name: Build 5.15.189 control and Linux kernels
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'kernel-build-*'
 
 permissions:
   contents: read

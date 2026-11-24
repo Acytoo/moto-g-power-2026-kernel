@@ -14,7 +14,8 @@ hardware/driver behavior still needs verification with our firmware.
 Create an empty public or private GitHub repository and push only this project.
 No fork of the larger phone-management repository is necessary. In **Actions**,
 select **Build 5.15.189 control and Linux kernels**, then **Run workflow**.
-There is no automatic build on push and no publishing to Releases.
+Alternatively, deliberately push a tag named `kernel-build-<name>` to start one
+build. Ordinary branch pushes do not start builds; nothing publishes to Releases.
 
 Two Ubuntu 24.04 x86-64 jobs cross-compile ARM64 kernels in parallel. They fetch
 immutable public source/compiler revisions, install build dependencies, reject
