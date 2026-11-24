@@ -12,7 +12,10 @@ export PATH="$ROOT/work/clang/bin:$PATH"
 export KBUILD_BUILD_USER=build-user KBUILD_BUILD_HOST=build-host KBUILD_BUILD_VERSION=1
 export KBUILD_BUILD_TIMESTAMP="$KERNEL_BUILD_TIMESTAMP"
 export SOURCE_DATE_EPOCH=1770997568
-# A source archive has no git metadata: pass the full known stock suffix explicitly.
+# Prevent setlocalversion from discovering the wrapper repository above this
+# source archive. Keep CONFIG_LOCALVERSION_AUTO unchanged from stock.
+: > "$SRC/.scmversion"
+# Pass the full known stock suffix explicitly.
 export LOCALVERSION="$KERNEL_LOCALVERSION"
 MK=(make -C "$SRC" O="$OUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang
     HOSTCC=clang HOSTCXX=clang++ KCFLAGS=-D__ANDROID_COMMON_KERNEL__
@@ -35,6 +38,11 @@ if [[ "$VARIANT" == linux ]]; then
 fi
 "${MK[@]}" olddefconfig
 python3 "$ROOT/scripts/prepare.py" check "$VARIANT" "$OUT/.config" "$DEST/config-drift.txt"
+release=$("${MK[@]}" -s --no-print-directory kernelrelease)
+[[ "$release" == "5.15.189$KERNEL_LOCALVERSION" && ${#release} -le 64 ]] || {
+  printf 'Unexpected kernel release: %s\n' "$release"; exit 1;
+}
+printf 'Verified kernel release: %s\n' "$release"
 "${MK[@]}" Image.gz modules 2>&1 | tee "$DEST/build.log"
 cp "$OUT/arch/arm64/boot/Image" "$OUT/arch/arm64/boot/Image.gz" "$OUT/vmlinux" "$OUT/Module.symvers" "$DEST/"
 cp "$OUT/.config" "$DEST/kernel.config"

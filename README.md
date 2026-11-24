@@ -14,8 +14,9 @@ hardware/driver behavior still needs verification with our firmware.
 Create an empty public or private GitHub repository and push only this project.
 No fork of the larger phone-management repository is necessary. In **Actions**,
 select **Build 5.15.189 control and Linux kernels**, then **Run workflow**.
-Alternatively, deliberately push a tag named `kernel-build-<name>` to start one
-build. Ordinary branch pushes do not start builds; nothing publishes to Releases.
+Alternatively, deliberately push to the `ci-build` branch (the retry lane, allowing
+public input caches to be reused), or push a `kernel-build-<name>` tag to start one
+build. Main/ordinary branch pushes do not start builds; nothing publishes to Releases.
 
 Two Ubuntu 24.04 x86-64 jobs cross-compile ARM64 kernels in parallel. They fetch
 immutable public source/compiler revisions, install build dependencies, reject
@@ -42,7 +43,8 @@ secrets, caches, logs, or artifacts. Never copy the phone-management workspace
 here. No GitHub secret is needed. No ADB/fastboot, VPS login, or flashing occurs.
 
 Only kernel outputs are uploaded; generated module-signing private keys remain
-in the ephemeral build workspace. No workspace-wide artifact upload or cache is
+in the ephemeral build workspace. Only downloaded public source/compiler trees
+are cached, before compilation. No workspace-wide artifact upload or cache is
 used. Artifacts in a public repository must be treated as public.
 
 ## What a passing build establishes

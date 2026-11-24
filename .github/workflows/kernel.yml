@@ -3,6 +3,8 @@ name: Build 5.15.189 control and Linux kernels
 on:
   workflow_dispatch:
   push:
+    branches:
+      - ci-build
     tags:
       - 'kernel-build-*'
 
@@ -36,8 +38,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev dwarves zstd lz4 curl python3 cpio rsync kmod gcc-aarch64-linux-gnu libc6-dev-arm64-cross
           df -h .
+      - name: Restore public source and compiler cache
+        id: public-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          key: public-inputs-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/sources.env') }}
+          path: |
+            work/common
+            work/clang
       - name: Fetch pinned public kernel and compiler
         run: bash scripts/fetch.sh
+      - name: Cache only downloaded public inputs
+        if: steps.public-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          key: public-inputs-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('config/sources.env') }}
+          path: |
+            work/common
+            work/clang
       - name: Build and reject unexplained configuration drift
         run: bash scripts/build.sh '${{ matrix.variant }}'
       - name: Upload selected kernel outputs
