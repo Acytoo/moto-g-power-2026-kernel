@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      BUILD_JOBS: '2'
+      BUILD_JOBS: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -43,15 +43,15 @@ jobs:
       - name: Reserve memory for full LTO on the disposable runner
         run: |
           # These are preinstalled SDKs on this fresh GitHub VM, never user files.
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
           available=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
-          if (( available < 28 * 1024 * 1024 * 1024 )); then
-            echo '::error::Need room for 16 GiB swap and at least 12 GiB build space'
+          if (( available < 44 * 1024 * 1024 * 1024 )); then
+            echo '::error::Need room for 32 GiB swap and at least 12 GiB build space'
             df -h .
             exit 1
           fi
           swap_file="$RUNNER_TEMP/kernel-build.swap"
-          sudo fallocate -l 16G "$swap_file"
+          sudo fallocate -l 32G "$swap_file"
           sudo chmod 600 "$swap_file"
           sudo mkswap "$swap_file"
           sudo swapon "$swap_file"
@@ -76,7 +76,17 @@ jobs:
             work/common
             work/clang
       - name: Build and reject unexplained configuration drift
-        run: bash scripts/build.sh '${{ matrix.variant }}'
+        run: |
+          # Bound the entire compiler/linker process tree, leaving RAM for the
+          # Actions agent. A build OOM must fail this step, not lose the runner.
+          sudo systemd-run --wait --pipe --collect \
+            --unit='kernel-build-${{ matrix.variant }}' \
+            --uid="$(id -u)" --gid="$(id -g)" --working-directory="$PWD" \
+            --setenv=BUILD_JOBS=1 --setenv=LINK_THREADS=1 \
+            --property=MemoryHigh=12G --property=MemoryMax=13G \
+            --property=MemorySwapMax=28G --property=CPUWeight=20 \
+            --property=OOMPolicy=stop \
+            /bin/bash scripts/build.sh '${{ matrix.variant }}'
       - name: Upload selected kernel outputs
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -28,11 +28,14 @@ after seven days. Private repositories consume Actions allowance/billable time.
 Standard runners have limited disk space. A source archive avoids a full repo
 checkout, and variants build in separate jobs. If disk space or RAM runs out,
 inspect the failed job before selecting a larger runner or tuning concurrency.
-The runner removes its preinstalled Android/.NET SDKs, reserves 16 GiB of swap,
-and uses two compiler jobs to leave memory headroom for stock full LTO. The stock
-optimization/debug settings remain intact. vmstat and peak resource usage are
-included with success/failure diagnostics; this changes only the disposable CI VM.
-Initial planning estimate: 30–90 minutes per kernel; this has not been measured.
+The runner removes unused preinstalled SDKs, reserves 32 GiB of swap, and uses
+one compiler job and one linker thread. A systemd service limits the whole build
+to 13 GiB RAM and 28 GiB swap, leaving RAM for the Actions agent and diagnostics.
+The stock optimization/debug settings remain intact. vmstat and peak resource
+usage are included with success/failure diagnostics; these limits apply only to
+the disposable CI VM. An earlier Linux build took 27 minutes with two compiler
+jobs; the stock runner lost communication, so that is not a reliable estimate
+for both variants or the current resource limits.
 
 ## Confidentiality boundary
 

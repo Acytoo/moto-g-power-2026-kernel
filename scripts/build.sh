@@ -18,6 +18,7 @@ export SOURCE_DATE_EPOCH=1770997568
 # Pass the full known stock suffix explicitly.
 export LOCALVERSION="$KERNEL_LOCALVERSION"
 MK=(make -C "$SRC" O="$OUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang
+    "LD=ld.lld --threads=${LINK_THREADS:-1}"
     HOSTCC=clang HOSTCXX=clang++ KCFLAGS=-D__ANDROID_COMMON_KERNEL__
     USERCFLAGS=--gcc-toolchain=/usr USERLDFLAGS=-fuse-ld=lld
     -j"${BUILD_JOBS:-$(nproc)}")
