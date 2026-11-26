@@ -31,7 +31,7 @@ class BTF:
             raise ValueError('Unsupported BTF header')
         strings = data[hdr + soff:hdr + soff + slen]
         self.types = [dict(kind=0, name='void', value=0)]
-        name = lambda off: strings[off:].split(b'\0', 1)[0].decode()
+        name = lambda off: strings[off:strings.index(b'\0', off)].decode()
         pos, end = hdr + toff, hdr + toff + tlen
         extra_sizes = {1: 4, 2: 0, 3: 12, 4: 12, 5: 12, 6: 8, 7: 0,
                        8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 8, 14: 4,
