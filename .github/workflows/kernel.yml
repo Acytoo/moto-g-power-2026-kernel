@@ -1,4 +1,4 @@
-name: Build 5.15.189 control and Linux kernels
+name: Build 5.15.189 stock, Linux and container kernels
 
 on:
   workflow_dispatch:

@@ -3,3 +3,13 @@
 /artifacts/
 __pycache__/
 *.pyc
+
+/private/
+*.age
+/runtime/display/*.o
+/runtime/display/*.ko
+/runtime/display/*.mod
+/runtime/display/*.mod.c
+/runtime/display/.*.cmd
+/runtime/display/Module.symvers
+/runtime/display/modules.order

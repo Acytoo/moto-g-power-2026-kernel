@@ -24,3 +24,20 @@ below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch.
 https://github.com/ravindu644/Droidspaces-OSS
 The patch retains its original authorship; upstream distributes it under GPL-3.0.
 It uses Android's ABI reservation macros for slots 6-8 of task_struct.
+
+Additional handoff sources:
+- `patches/debian-default.patch` adapts the original port's MIT-licensed chooser
+  and initramfs. Its upstream notice is retained in docs/upstream-license.txt.
+- Native Debian runtime mechanisms and the pinned modcrc helper come from the
+  same original port. They are fetched locally at the recorded commit; no
+  proprietary vendor runtime or firmware is redistributed here.
+- Docker's user-unit arrangement follows dockerd-rootless-setuptool.sh from
+  Docker/Moby (Apache-2.0); https://github.com/moby/moby. The minimal unit and
+  installers are maintained here; Docker binaries come from its official repo.
+- The panel helper source has its own GPL-2.0 SPDX notice. Built modules stay local.
+- Official Android boot-image tools and fastboot are downloaded using
+  config/tools.json hashes. Their upstream licenses apply; binaries are not tracked.
+
+The original local scripts were parameterized for this handoff. Historical
+hardware results apply to the tested implementation; portable refactoring checks
+are recorded separately, without claiming a second hardware provisioning run.

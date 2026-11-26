@@ -1,0 +1,59 @@
+--- a/linux/initramfs/chooser.c
++++ b/linux/initramfs/chooser.c
+@@ -72,19 +72,19 @@
+ static int rescue_key;      // Vol-up stayed down for HOLD_MS after detection
+ static int key_held(void) {  // 1 = Vol-up seen during the window
+   int fd = open(KPD_KO, O_RDONLY | O_CLOEXEC);
+-  if (fd < 0) { logf_("no %s", KPD_KO); return 0; }
++  if (fd < 0) { logf_("no %s", KPD_KO); return -1; }
+   int r = syscall(SYS_finit_module, fd, "", 0); int err = errno; close(fd);
+-  if (r && err != EEXIST) { logf_("finit_module mtk-kpd: %s", strerror(err)); return 0; }
++  if (r && err != EEXIST) { logf_("finit_module mtk-kpd: %s", strerror(err)); return -1; }
+   char ev[32] = {0}; long t0 = now_ms();
+   while (!find_event(ev, sizeof ev) && now_ms() - t0 < 500) usleep(20000);
+-  if (!ev[0]) { logf_("no %s event device", KPD_NAME); return 0; }
++  if (!ev[0]) { logf_("no %s event device", KPD_NAME); return -1; }
+   char p[96], dev[32] = {0}; unsigned ma, mi;
+   snprintf(p, sizeof p, "/sys/class/input/%s/dev", ev);
+-  int dfd = open(p, O_RDONLY); if (dfd < 0) return 0;
++  int dfd = open(p, O_RDONLY); if (dfd < 0) return -1;
+   (void)!read(dfd, dev, sizeof dev - 1); close(dfd);
+-  if (sscanf(dev, "%u:%u", &ma, &mi) != 2 || mknod("/dev/chooser-kpd", S_IFCHR | 0600, makedev(ma, mi))) { logf_("mknod failed"); return 0; }
++  if (sscanf(dev, "%u:%u", &ma, &mi) != 2 || mknod("/dev/chooser-kpd", S_IFCHR | 0600, makedev(ma, mi))) { logf_("mknod failed"); return -1; }
+   int efd = open("/dev/chooser-kpd", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+-  if (efd < 0) { logf_("open event: %s", strerror(errno)); return 0; }
++  if (efd < 0) { logf_("open event: %s", strerror(errno)); return -1; }
+   int held = 0; long start = now_ms();
+   while (!held && now_ms() - start < WINDOW_MS) {
+     unsigned char keys[KEY_MAX / 8 + 1] = {0};
+@@ -147,7 +147,18 @@
+     kmsg = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
+     int normal = bootconfig_is("androidboot.force_normal_boot", "1") && bootconfig_is("androidboot.mode", "normal");
+     logf_("start; normal boot: %s", normal ? "yes" : "no -> Android");
+-    if (normal) golinux = key_held();
++    if (normal) {
++      int selection = key_held();
++      if (selection < 0) { logf_("keypad unavailable -> Android"); golinux = 0; }
++      else {
++#ifdef DEFAULT_LINUX
++        golinux = !selection;
++        rescue_key = 0;  // Volume Up selects Android in this variant.
++#else
++        golinux = selection;
++#endif
++      }
++    }
+ #ifdef DRY
+     if (golinux) logf_("DRY build: Linux would be chosen; booting Android");
+     golinux = 0;
+--- a/linux/initramfs/init.linux
++++ b/linux/initramfs/init.linux
+@@ -61,7 +61,7 @@
+ rescue() {
+   log "RESCUE: $*"
+   [ -s /tmp/insmod.fail ] && while read -r l; do log "insmod failed: $l"; done < /tmp/insmod.fail
+-  ( sleep 600; [ -e /stay ] || { log "rescue timeout -> reboot (Android)"; sync; reboot -f; } ) &
++  ( sleep 600; [ -e /stay ] || { log "rescue timeout -> fallback"; sync; if [ -e /linux/debian-default ]; then /linux/rebootbl; else reboot -f; fi; } ) &
+   gadget
+   sleep 1; [ -e /dev/ttyGS0 ] || mdev -s
+   ( while :; do [ -e /dev/ttyGS0 ] && setsid sh -c 'exec sh -i </dev/ttyGS0 >/dev/ttyGS0 2>&1'; sleep 1; done ) &

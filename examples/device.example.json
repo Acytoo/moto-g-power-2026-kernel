@@ -1,0 +1,15 @@
+{
+  "serial": "REPLACE_WITH_DEVICE_SERIAL",
+  "product": "vegas",
+  "sku": "XT2617V",
+  "slot": "a",
+  "boot_size": 67108864,
+  "ssh_host": "172.16.42.1",
+  "ssh_port": 22,
+  "ssh_user": "REPLACE_WITH_LOGIN_USER",
+  "identity_file": "REPLACE_WITH_EXISTING_KEY_PATH",
+  "known_hosts_file": "phone_known_hosts",
+  "host_key_alias": "REPLACE_WITH_PINNED_HOST_ALIAS",
+  "fastboot": "../work/tools/fastboot-37.0.1",
+  "fastboot_sha256": "REPLACE_WITH_VERIFIED_TOOL_SHA256"
+}

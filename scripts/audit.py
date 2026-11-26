@@ -3,15 +3,10 @@
 from pathlib import Path
 import re
 import subprocess
+import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED = {
-    '.gitignore', '.github/workflows/kernel.yml', 'README.md', 'NOTICE.md',
-    'config/stock.config', 'config/linux.fragment', 'config/sources.env',
-    'scripts/fetch.sh', 'scripts/build.sh', 'scripts/prepare.py', 'scripts/compare.py',
-    'scripts/audit.py', 'tests/test_gates.py', 'scripts/btf.py',
-    'config/containers.fragment', 'patches/sysvipc-kabi.patch',
-}
+MANIFEST = 'config/public-files.txt'
 
 
 def check_content(name, content):
@@ -27,16 +22,35 @@ def check_content(name, content):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--working-tree', action='store_true',
+                        help='Check reviewed files before staging; default checks exact index blobs')
+    args = parser.parse_args()
+    def read(name):
+        if args.working_tree:
+            p = ROOT / name
+            if p.is_symlink():
+                raise SystemExit(f'Symlink is not allowed: {name}')
+            return p.read_bytes()
+        return subprocess.check_output(['git', '-C', str(ROOT), 'show', ':' + name])
+    allowed = set(read(MANIFEST).decode().splitlines())
+    if not allowed or MANIFEST not in allowed or any(
+            not n or Path(n).is_absolute() or '..' in Path(n).parts for n in allowed):
+        raise SystemExit('Invalid publication allowlist')
     raw = subprocess.check_output(['git', '-C', str(ROOT), 'ls-files', '-z'])
     tracked = set(raw.decode().strip('\x00').split('\x00'))
-    if tracked != ALLOWED:
-        raise SystemExit(f'Tracked-file allowlist mismatch: {sorted(tracked ^ ALLOWED)}')
-    for name in sorted(tracked):
-        p = ROOT / name
-        if p.is_symlink() or p.stat().st_size > 1024 * 1024:
+    if not args.working_tree and tracked != allowed:
+        raise SystemExit(f'Tracked-file allowlist mismatch: {sorted(tracked ^ allowed)}')
+    if not args.working_tree:
+        entries = subprocess.check_output(['git', '-C', str(ROOT), 'ls-files', '-s', '-z']).decode().split('\x00')
+        if any(e and not e.startswith(('100644 ', '100755 ')) for e in entries):
+            raise SystemExit('Only regular text files may be tracked')
+    for name in sorted(allowed):
+        content = read(name)
+        if len(content) > 1024 * 1024:
             raise SystemExit(f'Unexpected input type or size: {name}')
-        check_content(name, p.read_bytes())
-    print(f'Publication audit passed: {len(tracked)} explicitly allowed text files; no phone captures')
+        check_content(name, content)
+    print(f'Publication audit passed: {len(allowed)} explicitly allowed text files')
 
 
 if __name__ == '__main__':

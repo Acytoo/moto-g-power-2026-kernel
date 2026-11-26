@@ -1,0 +1,16 @@
+Host moto-vps
+    HostName REPLACE_WITH_RELAY_HOST
+    User REPLACE_WITH_RELAY_USER
+    Port REPLACE_WITH_RELAY_SSH_PORT
+    IdentityFile /etc/moto-tunnel/identity
+    IdentitiesOnly yes
+    BatchMode yes
+    UserKnownHostsFile /etc/moto-tunnel/known_hosts
+    StrictHostKeyChecking yes
+    SessionType none
+    ExitOnForwardFailure yes
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+    RemoteForward 127.0.0.1:REPLACE_WITH_FORWARD_PORT 127.0.0.1:8022
+    # Optional: requires netcat-openbsd and the matching local Xray SOCKS port.
+    # ProxyCommand /usr/bin/nc -X 5 -x 127.0.0.1:23465 %h %p

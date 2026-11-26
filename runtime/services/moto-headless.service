@@ -1,0 +1,9 @@
+[Unit]
+Description=Keep the phone display off for headless server use
+After=systemd-udev-trigger.service systemd-backlight@backlight:ktd3136-bl.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/moto-headless
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

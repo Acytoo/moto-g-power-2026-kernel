@@ -1,0 +1,20 @@
+#!/bin/sh
+# Headless-only panel shutdown. A failed/interrupted attempt is not retried
+# automatically on the next boot, so a driver fault cannot create a boot loop.
+set -eu
+expected='5.15.189-android13-8-00018-g9c82b71884fd-ab14885418'
+[ "$(uname -r)" = "$expected" ] || { echo 'Kernel mismatch; leaving panel unchanged'; exit 1; }
+[ ! -e /etc/moto-panel-off.disabled ] || { echo 'Panel shutdown disabled by administrator'; exit 0; }
+state=/var/lib/moto-panel-off
+install -d -m 700 "$state"
+if [ -e "$state/attempting" ]; then
+    echo 'Previous panel shutdown was interrupted or failed; skipping automatic retry'
+    exit 1
+fi
+echo "$(cat /proc/sys/kernel/random/boot_id)" > "$state/attempting"
+sync "$state/attempting" "$state"
+modprobe moto_panel_off poweroff=1
+[ "$(cat /sys/module/moto_panel_off/parameters/poweroff)" = Y ]
+rm "$state/attempting"
+sync "$state"
+echo 'Vendor panel shutdown completed'

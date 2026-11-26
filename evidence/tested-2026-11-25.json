@@ -1,0 +1,58 @@
+{
+  "tested_date": "2026-11-25",
+  "model": "XT2617V",
+  "product": "vegas",
+  "firmware": "W1WEOS36.48-22-3-3-4-3",
+  "kernel_release": "5.15.189-android13-8-00018-g9c82b71884fd-ab14885418",
+  "kernel_commit": "9c82b71884fdada085e6a396b7a527e1f1cdf0fc",
+  "recipe_commit": "46154406457f3e38f5793709415840194748e54d",
+  "ci_run": 45735333885,
+  "Image_sha256": "0e84e24a5443b0b8cfb89907f3652c4226a43c4484e0d19770ffadf62de9413a",
+  "module_files_checked": 399,
+  "kernel_imports_checked": 18663,
+  "common_struct_names_checked": 10509,
+  "crc_mismatches": [],
+  "missing_imports": [],
+  "changed_common_structure_sizes": [],
+  "changed_critical_member_layouts": [],
+  "panel_module_imports_checked": 8,
+  "runtime_verified": [
+    "native Debian 13 ARM64",
+    "rootless Docker as an ordinary user",
+    "overlay2",
+    "PID isolation",
+    "DNS and HTTPS",
+    "128 MiB memory limit",
+    "relative CPU scheduling weights",
+    "loopback port publishing",
+    "named volume persistence",
+    "BuildKit build",
+    "Docker Compose",
+    "daemon and container startup after reboot before user login",
+    "Wi-Fi and USB SSH",
+    "reverse SSH",
+    "panel shutdown after reboot",
+    "thermal and charge services active"
+  ],
+  "not_verified": [
+    "Android boot with container kernel",
+    "long-duration soak",
+    "other firmware or panel variants",
+    "full stock-to-Debian run using newly portable helpers"
+  ],
+  "unsupported": [
+    "CFS_BANDWIDTH CPU quotas",
+    "CGROUP_PIDS process count limits"
+  ],
+  "storage_reserved_gib": 64,
+  "rescue_root_gib": 3,
+  "wipe_performed": false,
+  "packages": {
+    "docker-ce": "5:29.10.1-1~debian.13~trixie",
+    "docker-ce-cli": "5:29.10.1-1~debian.13~trixie",
+    "docker-ce-rootless-extras": "5:29.10.1-1~debian.13~trixie",
+    "containerd.io": "2.4.2-4~debian.13~trixie",
+    "docker-buildx-plugin": "0.39.1-1~debian.13~trixie",
+    "docker-compose-plugin": "5.8.0-1~debian.13~trixie"
+  }
+}

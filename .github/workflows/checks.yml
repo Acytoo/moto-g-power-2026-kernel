@@ -1,0 +1,22 @@
+name: Handoff and publication checks
+on:
+  push:
+    branches: [main, containers]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Audit exact tracked inputs and test guards
+        run: |
+          python3 scripts/audit.py
+          python3 -m unittest discover -s tests -v
+          git ls-files -z '*.sh' | xargs -0 -r -n1 bash -n
+          python3 -m compileall -q scripts tools native runtime/docker

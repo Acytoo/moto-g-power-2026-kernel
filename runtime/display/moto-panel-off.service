@@ -1,0 +1,14 @@
+[Unit]
+Description=Power down the LCD panel for headless Debian
+After=vegas-modules.service moto-headless.service ssh.service
+Wants=moto-headless.service
+ConditionPathExists=/sys/bus/mipi-dsi/devices/14017000.dsi.0/driver
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/moto-panel-off
+RemainAfterExit=yes
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

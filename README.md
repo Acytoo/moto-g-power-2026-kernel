@@ -1,99 +1,76 @@
-# Moto G Power 2026: 5.15.189 kernel experiment
+# Moto G Power 2026: native Debian and rootless Docker
 
-Build a control kernel and a Linux-userspace variant from the exact public source
-revision recorded by the W1WEOS36.48-22-3-3-4-3 kernel. This is **not a complete
-Debian port, a flashable image, or a claim of compatibility**.
+A reproducible kernel recipe and operational handoff for the XT2617V (`vegas`,
+MT6835). The tested phone runs native Debian 13 ARM64, a 64 GiB main root,
+headless power management and rootless Docker under a systemd user service.
+The kernel update preserved the filesystem; no wipe was needed.
 
-The stock target uses the extracted stock configuration. The Linux target adds
-devtmpfs, file handles, autofs, tmpfs ACLs (including their xattr dependency), and disables export trimming and GKI
-module signature protection, following the referenced port. Android's normal
-hardware/driver behavior still needs verification with our firmware.
+**Tested:** firmware `W1WEOS36.48-22-3-3-4-3`, kernel 5.15.189, one phone.
+Android boot with the container kernel and long-duration stability are **untested**.
+The public tree contains source/configuration/docs, not firmware, vendor captures,
+credentials, phone images or a universal ready-to-flash installer.
 
-## Run in GitHub Actions
+## Start here
 
-Create an empty public or private GitHub repository and push only this project.
-No fork of the larger phone-management repository is necessary. In **Actions**,
-select **Build 5.15.189 control and Linux kernels**, then **Run workflow**.
-Alternatively, deliberately push to the `ci-build` branch (the retry lane, allowing
-public input caches to be reused), or push a `kernel-build-<name>` tag to start one
-build. Main/ordinary branch pushes do not start builds; nothing publishes to Releases.
-A new deliberate build on the same branch supersedes its older unfinished run.
+- [Agent instructions](AGENTS.md) — required context for continuing the work.
+- [Current state](docs/current-state.md) and [sanitized evidence](evidence/tested-2026-11-25.json).
+- [Reproduction](docs/reproduction.md) — another laptop versus a stock replacement phone.
+- [Kernel build and boot-only update](docs/kernel.md).
+- [Docker installation and operation](docs/docker.md).
+- [Native Debian configuration/chooser](native/README.md).
+- [Private backups and recovery](docs/recovery.md).
+- [Troubleshooting](docs/troubleshooting.md) and [validation of these portable tools](docs/validation.md).
+- [Source attribution](NOTICE.md).
 
-Two Ubuntu 24.04 x86-64 jobs cross-compile ARM64 kernels in parallel. They fetch
-immutable public source/compiler revisions, install build dependencies, reject
-unexpected configuration drift, and produce explicitly selected artifacts.
-A third job compares BTF structure layouts and export CRCs. Artifacts expire
-after seven days. Private repositories consume Actions allowance/billable time.
+## What is here
 
-Standard runners have limited disk space. A source archive avoids a full repo
-checkout, and variants build in separate jobs. If disk space or RAM runs out,
-inspect the failed job before selecting a larger runner or tuning concurrency.
-The runner removes unused preinstalled SDKs, reserves 32 GiB of swap, and uses
-one compiler job and one linker thread. A systemd service limits the whole build
-to 13 GiB RAM and 28 GiB swap, leaving RAM for the Actions agent and diagnostics.
-The stock optimization/debug settings remain intact. vmstat and peak resource
-usage are included with success/failure diagnostics; these limits apply only to
-the disposable CI VM. An earlier Linux build took 27 minutes with two compiler
-jobs; the stock runner lost communication, so that is not a reliable estimate
-for both variants or the current resource limits.
+`config/`, `patches/`, `scripts/` and the kernel workflow build stock, minimal Linux
+and container variants from pinned public sources/compiler. The container variant
+adds user/PID/IPC namespaces and a credited SYSVIPC reserved-space patch. Export
+CRC and BTF checks reject unexplained incompatibility. CPU quotas and PID-count
+limits remain disabled to preserve the stock vendor ABI.
 
-## Confidentiality boundary
+`tools/` contains pinned public-tool downloads, a local vendor compatibility
+checker, offline boot packaging and an exact-device boot-only CLI driven by an
+ignored private profile. `native/` preserves the customized rootfs/chooser recipe.
+`runtime/` contains Docker, tunnel/proxy, headless and panel-helper source/templates.
+`examples/` contains placeholders only. No tool needs a hardcoded laptop home path.
 
-CI receives only these tracked text files: generic source pins, configuration,
-scripts, workflow, tests, and documentation. The kernel config is reviewed and
-contains no device identity. Username, hostname, kernel suffix, and timestamp are
-generic/public firmware values. A tracked-file allowlist and common-key-pattern
-check run before builds; neither replaces human review of future changes.
+For a laptop already managing the installed phone:
 
-Do not put phone captures, IMEI/serial records, partitions, vendor/NV data, Wi-Fi
-credentials, SSH private keys, or proxy credentials in this repository, its
-secrets, caches, logs, or artifacts. Never copy the phone-management workspace
-here. No GitHub secret is needed. No ADB/fastboot, VPS login, or flashing occurs.
+```sh
+# Populate this privately from the owner's existing connection/recovery records.
+mkdir -p private
+chmod 700 private
+cp examples/device.example.json private/device.json
+chmod 600 private/device.json
+# Edit the placeholders, then perform a read-only check:
+python3 tools/phone.py --profile private/device.json status
+```
 
-Only kernel outputs are uploaded; generated module-signing private keys remain
-in the ephemeral build workspace. Only downloaded public source/compiler trees
-are cached, before compilation. No workspace-wide artifact upload or cache is
-used. Artifacts in a public repository must be treated as public.
+## CI and reproducibility
 
-## What a passing build establishes
+Normal pushes/PRs run lightweight publication and helper checks. To rebuild the
+kernels, use the kernel workflow's **Run workflow** action, push to `ci-build`, or
+push a deliberate `kernel-build-*` tag. Three Ubuntu 24.04 jobs build independently;
+a fourth compares their outputs. The successful container compile took about
+59 minutes. Artifacts expire after **7 days**; preserve verified outputs privately.
+Source/compiler pins and the historical tested commit remain available in Git.
 
-- Source and compiler are pinned; configuration changes are explicit.
-- Stock/modified builds have comparable exported-symbol CRCs and selected BTF
-  member layouts, with all common struct/union sizes compared.
-- Output checksums, configs, compiler version, logs and vmlinux are available.
+A passing CI run is not a hardware compatibility guarantee. Complete local vendor
+checks, exact-device identification, backups, image validation and staged hardware
+tests still apply. Portable refactoring was validated offline; we did not repeat
+stock-to-Debian provisioning just to publish this handoff.
 
-It does **not** establish stock binary reproducibility, complete ABI compatibility,
-vendor module loadability, bootloader acceptance, hardware safety, or working
-Wi-Fi/charging/thermal behavior. The stock export whitelist is reconstructed from
-the pinned upstream GKI lists; any difference from the manufacturer's build must
-be investigated locally. Tool-version-only config differences are reported.
+## Publication boundary
 
-## Local steps after CI
+Only explicitly allowlisted text files are tracked. The audit checks Git index
+blobs during CI/publication, with an optional working-tree check before staging.
+It detects common credentials and binaries; it is a backstop, not a replacement
+for reviewing the diff. Device profiles, captures, backups and build outputs stay
+under ignored private/work/artifacts/dist directories. CI receives no phone keys,
+Wi-Fi/proxy credentials, vendor/NV files or device identifiers. Only selected
+public kernel outputs are uploaded; generated signing keys remain on the runner.
 
-1. Verify downloaded SHA256SUMS; compare the control Image/config/BTF with stock.
-2. Check the phone's original vendor module imports against both Module.symvers
-   files, including module-to-module dependencies, signatures, and CFI constraints.
-3. Derive boot image headers/footer placement from this firmware, not -4-2 constants.
-4. Confirm fastboot and the exact restore procedure work before any experimental flash.
-5. Test the kernel/initramfs independently before adding Debian or changing super.
-
-Device captures and all final per-phone assembly remain on the laptop. A green
-Actions run never authorizes flashing. Hardware has not been tested with this build.
-
-See NOTICE.md for upstream sources and licensing.
-
-## Container experiment
-
-The `containers` branch adds a third build, based on the existing Linux variant:
-PID/IPC/user namespaces, SysV IPC, POSIX message queues, and the iptables addrtype
-match. Rootless Docker/Podman is the target; no hardware virtualization is used.
-SYSVIPC fields occupy task_struct's reserved ABI slots 6-8. The comparison checks
-all existing selected member offsets and types, allows only those two additions
-inside the exact reserved space, and still rejects structure-size/export changes.
-Local checks against this phone's actual vendor modules remain mandatory.
-
-Memory control is present. CPU quotas (CFS_BANDWIDTH) and the pids controller are
-intentionally absent: they change the vendor ABI. Do not advertise those limits
-or force-load vendor modules. Runtime compatibility remains untested until a
-successful phone boot and container tests. No wipe or root filesystem replacement
-is planned; a boot_a-only trial preserves both Debian and Android data.
+A second laptop can reconstruct the tools from Git. Recovering this exact phone
+also requires its separately protected private bundle; see the recovery document.

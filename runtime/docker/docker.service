@@ -1,0 +1,27 @@
+# Based on Docker's installed dockerd-rootless-setuptool.sh unit template.
+[Unit]
+Description=Docker Application Container Engine (Rootless)
+Documentation=https://docs.docker.com/engine/security/rootless/
+Requires=dbus.socket
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Environment=PATH=/usr/bin:/usr/sbin:/bin:/sbin
+Environment=DOCKERD_ROOTLESS_ROOTLESSKIT_NET=slirp4netns
+ExecStart=/usr/bin/dockerd-rootless.sh
+ExecReload=/bin/kill -s HUP $MAINPID
+TimeoutStartSec=120
+TimeoutStopSec=60
+Restart=always
+RestartSec=3
+LimitNOFILE=infinity
+LimitNPROC=infinity
+TasksMax=infinity
+Delegate=yes
+Type=notify
+NotifyAccess=all
+KillMode=mixed
+
+[Install]
+WantedBy=default.target

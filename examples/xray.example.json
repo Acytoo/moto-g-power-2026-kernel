@@ -1,0 +1,21 @@
+{
+  "log": {"loglevel": "warning"},
+  "inbounds": [{
+    "tag": "socks", "listen": "127.0.0.1", "port": 23465,
+    "protocol": "socks", "settings": {"auth": "noauth", "udp": true}
+  }],
+  "outbounds": [{
+    "tag": "proxy", "protocol": "vless",
+    "settings": {"vnext": [{
+      "address": "REPLACE_WITH_PROXY_HOST", "port": 8443,
+      "users": [{"id": "REPLACE_WITH_UUID", "flow": "xtls-rprx-vision", "encryption": "none"}]
+    }]},
+    "streamSettings": {
+      "network": "tcp", "security": "reality",
+      "realitySettings": {
+        "serverName": "REPLACE_WITH_SERVER_NAME", "fingerprint": "chrome",
+        "shortId": "REPLACE_WITH_SHORT_ID", "publicKey": "REPLACE_WITH_REALITY_PUBLIC_KEY"
+      }
+    }
+  }]
+}

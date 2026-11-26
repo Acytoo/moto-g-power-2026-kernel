@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+for backlight in /sys/class/backlight/*/brightness; do
+    [ -w "$backlight" ] && echo 0 > "$backlight"
+done
+if [ -w /sys/power/autosleep ]; then echo off > /sys/power/autosleep; fi
