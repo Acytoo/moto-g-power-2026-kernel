@@ -81,3 +81,19 @@ Device captures and all final per-phone assembly remain on the laptop. A green
 Actions run never authorizes flashing. Hardware has not been tested with this build.
 
 See NOTICE.md for upstream sources and licensing.
+
+## Container experiment
+
+The `containers` branch adds a third build, based on the existing Linux variant:
+PID/IPC/user namespaces, SysV IPC, POSIX message queues, and the iptables addrtype
+match. Rootless Docker/Podman is the target; no hardware virtualization is used.
+SYSVIPC fields occupy task_struct's reserved ABI slots 6-8. The comparison checks
+all existing selected member offsets and types, allows only those two additions
+inside the exact reserved space, and still rejects structure-size/export changes.
+Local checks against this phone's actual vendor modules remain mandatory.
+
+Memory control is present. CPU quotas (CFS_BANDWIDTH) and the pids controller are
+intentionally absent: they change the vendor ABI. Do not advertise those limits
+or force-load vendor modules. Runtime compatibility remains untested until a
+successful phone boot and container tests. No wipe or root filesystem replacement
+is planned; a boot_a-only trial preserves both Debian and Android data.

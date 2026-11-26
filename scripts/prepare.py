@@ -42,8 +42,10 @@ def symbols():
 
 def check(variant, actual, report):
     expected = config(ROOT / 'config/stock.config')
-    if variant == 'linux':
+    if variant in ('linux', 'containers'):
         expected.update(config(ROOT / 'config/linux.fragment'))
+        if variant == 'containers':
+            expected.update(config(ROOT / 'config/containers.fragment'))
     elif variant != 'stock':
         raise SystemExit('Unknown variant')
     found = config(actual)
@@ -52,7 +54,7 @@ def check(variant, actual, report):
                 'CONFIG_AS_VERSION', 'CONFIG_LD_VERSION', 'CONFIG_GCC_VERSION',
                 'CONFIG_PAHOLE_VERSION'}
     # Linux no longer needs the trim whitelist once trimming is disabled.
-    if variant == 'linux':
+    if variant in ('linux', 'containers'):
         expected.pop('CONFIG_UNUSED_KSYMS_WHITELIST', None)
         found.pop('CONFIG_UNUSED_KSYMS_WHITELIST', None)
     differences = {k: (expected.get(k, 'n'), found.get(k, 'n'))

@@ -2,8 +2,8 @@
 set -Eeuo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 source "$ROOT/config/sources.env"
-VARIANT=${1:?usage: build.sh stock|linux}
-[[ "$VARIANT" == stock || "$VARIANT" == linux ]] || exit 1
+VARIANT=${1:?usage: build.sh stock|linux|containers}
+[[ "$VARIANT" == stock || "$VARIANT" == linux || "$VARIANT" == containers ]] || exit 1
 SRC="$ROOT/work/common"
 OUT="$ROOT/work/out/$VARIANT"
 DEST="$ROOT/dist/$VARIANT"
@@ -34,8 +34,13 @@ cp "$ROOT/work/abi_symbollist.raw" "$OUT/abi_symbollist.raw"
 # gen_autoksyms.sh resolves relative whitelist paths against the source tree.
 cp "$ROOT/work/abi_symbollist.raw" "$SRC/abi_symbollist.raw"
 cp "$ROOT/config/stock.config" "$OUT/.config"
-if [[ "$VARIANT" == linux ]]; then
+if [[ "$VARIANT" == linux || "$VARIANT" == containers ]]; then
   "$SRC/scripts/kconfig/merge_config.sh" -m -O "$OUT" "$OUT/.config" "$ROOT/config/linux.fragment"
+fi
+if [[ "$VARIANT" == containers ]]; then
+  # Source cache is saved before mutation; every job has its own source tree.
+  patch --batch --fuzz=0 -d "$SRC" -p1 < "$ROOT/patches/sysvipc-kabi.patch"
+  "$SRC/scripts/kconfig/merge_config.sh" -m -O "$OUT" "$OUT/.config" "$ROOT/config/containers.fragment"
 fi
 "${MK[@]}" olddefconfig
 python3 "$ROOT/scripts/prepare.py" check "$VARIANT" "$OUT/.config" "$DEST/config-drift.txt"

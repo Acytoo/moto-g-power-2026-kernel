@@ -9,7 +9,8 @@ ALLOWED = {
     '.gitignore', '.github/workflows/kernel.yml', 'README.md', 'NOTICE.md',
     'config/stock.config', 'config/linux.fragment', 'config/sources.env',
     'scripts/fetch.sh', 'scripts/build.sh', 'scripts/prepare.py', 'scripts/compare.py',
-    'scripts/audit.py', 'tests/test_gates.py',
+    'scripts/audit.py', 'tests/test_gates.py', 'scripts/btf.py',
+    'config/containers.fragment', 'patches/sysvipc-kabi.patch',
 }
 
 

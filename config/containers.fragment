@@ -1,0 +1,13 @@
+# Applied after linux.fragment. Preserve the stock vendor-module ABI.
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_SYSVIPC_COMPAT=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+CONFIG_IPC_NS=y
+CONFIG_PID_NS=y
+CONFIG_USER_NS=y
+CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
+# CPU bandwidth and pids cgroups resize shared structures; intentionally off.
+# CONFIG_CFS_BANDWIDTH is not set
+# CONFIG_CGROUP_PIDS is not set

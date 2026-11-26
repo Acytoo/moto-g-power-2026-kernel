@@ -17,3 +17,10 @@ licenses and notices. This project does not change those licenses.
 The recorded stock configuration was extracted from this firmware. Its original
 build-machine path for the symbol whitelist is normalized to abi_symbollist.raw;
 no personal path or phone identifier is needed to compile the kernel.
+
+SYSVIPC kABI padding patch: nullptr-t-oss, via Droidspaces-OSS commit
+77e63323c937ae69e260aa8432d6f664997312c1, Documentation/resources/kernel-patches/GKI/
+below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch.
+https://github.com/ravindu644/Droidspaces-OSS
+The patch retains its original authorship; upstream distributes it under GPL-3.0.
+It uses Android's ABI reservation macros for slots 6-8 of task_struct.

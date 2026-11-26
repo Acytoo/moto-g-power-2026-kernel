@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from btf import BTF, section, compatible_members
 
 
 def layout(image, name=None):
@@ -44,7 +45,8 @@ def main(stock, linux, output):
     changed = sorted(k for k in a if k not in b or a[k] != b[k])
     types = ['task_struct', 'mm_struct', 'file', 'inode', 'super_block', 'dentry',
              'sk_buff', 'net_device', 'device', 'module', 'cred', 'signal_struct']
-    members = [k for k in types if layout(stock / 'vmlinux', k) != layout(linux / 'vmlinux', k)]
+    old_btf, new_btf = BTF(section(stock / 'vmlinux')), BTF(section(linux / 'vmlinux'))
+    members = [k for k in types if not compatible_members(old_btf, new_btf, k)]
     sa, sb = exports(stock / 'Module.symvers'), exports(linux / 'Module.symvers')
     crc_changes = sorted(k for k in sa if k not in sb or sa[k] != sb[k])
     report = dict(changed_or_removed_structure_sizes=changed,

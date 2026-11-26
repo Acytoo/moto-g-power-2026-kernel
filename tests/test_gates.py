@@ -4,6 +4,8 @@ import io
 from pathlib import Path
 import tempfile
 import unittest
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -63,6 +65,23 @@ class Gates(unittest.TestCase):
     def test_empty_btf_data_fails_closed(self):
         with self.assertRaises(RuntimeError):
             module('compare').sizes('')
+
+    def test_padding_reuse_does_not_allow_other_member_changes(self):
+        from btf import compatible_members
+        from types import SimpleNamespace
+        fields = {f'android_kabi_reserved{i}': (i * 64, 0, (1, 'u64', 8, 64)) for i in (6, 7, 8)}
+        fields['existing'] = (32, 0, (1, 'int', 4, 32))
+        old = SimpleNamespace(named=lambda name: fields)
+        new = dict(fields, sysvsem=(384, 0, (4, 'sysv_sem', 8)),
+                   sysvshm=(448, 0, (4, 'sysv_shm', 16)))
+        candidate = SimpleNamespace(named=lambda name: new)
+        self.assertTrue(compatible_members(old, candidate, 'task_struct'))
+        self.assertFalse(compatible_members(old, candidate, 'mm_struct'))
+        new['existing'] = (64, 0, (1, 'int', 4, 32))
+        self.assertFalse(compatible_members(old, candidate, 'task_struct'))
+        new['existing'] = fields['existing']
+        new['sysvshm'] = (456, 0, (4, 'sysv_shm', 16))
+        self.assertFalse(compatible_members(old, candidate, 'task_struct'))
 
     def test_private_key_rejected(self):
         payload = ('-----BEGIN ' + 'OPENSSH PRIVATE KEY-----').encode()
