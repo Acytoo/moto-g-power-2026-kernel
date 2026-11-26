@@ -48,7 +48,7 @@ account = json.loads((INPUT / 'capture/account.private.json').read_text())
 fields = account['passwd'].split(':'); uid, gid, home, shell = fields[2], fields[3], fields[5], fields[6]
 user = fields[0]
 assert re.fullmatch(r'[a-z_][a-z0-9_-]*', user) and int(uid) > 0 and int(gid) > 0
-assert home == '/home/' + user and shell in ('/bin/zsh', '/bin/bash')
+assert home == '/home/' + user and shell in ('/bin/zsh', '/bin/bash', '/usr/bin/zsh', '/usr/bin/bash')
 run('chroot', ROOT, 'groupadd', '-g', gid, user)
 run('chroot', ROOT, 'useradd', '-u', uid, '-g', gid, '-m', '-s', shell, user)
 run('chroot', ROOT, 'usermod', '-aG', 'sudo', user)

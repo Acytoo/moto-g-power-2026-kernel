@@ -11,7 +11,7 @@ python3 "$here/subids.py" "$(id -un)"
 for helper in /usr/bin/newuidmap /usr/bin/newgidmap; do
  [[ $(stat -c '%u:%a' "$helper") == 0:4755 ]]
 done
-iptables --version | grep -q legacy
+/usr/sbin/iptables --version | grep -q legacy
 systemctl --user show-environment >/dev/null
 install -d -m0700 "$HOME/.config/systemd/user" "$HOME/.config/docker"
 install_same() {
